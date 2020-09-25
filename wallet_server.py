@@ -10,6 +10,7 @@ import wallet
 
 app = Flask(__name__, template_folder='./templates')
 
+
 @app.route('/')
 def index():
     return render_template('./index.html')
@@ -68,12 +69,29 @@ def create_transaction():
     return jsonify({'message': 'fail', 'response': response}), 400
 
 
+@app.route('/wallet/amount', methods=['GET'])
+def calculate_amount():
+    required = ['blockchain_address']
+    if not all(k in request.args for k in required):
+        return 'Missing values', 400
+
+    my_blockchain_address = request.args.get('blockchain_address')
+    response = requests.get(
+        urllib.parse.urljoin(app.config['gw'], 'amount'),
+        {'blockchain_address': my_blockchain_address},
+        timeout=3)
+    if response.status_code == 200:
+        total = response.json()['amount']
+        return jsonify({'message': 'success', 'amount': total}), 200
+    return jsonify({'message': 'fail', 'error': response.content}), 400
+
+
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument('-p', '--port', default=8888,
                         type=int, help='port to listen on')
-    parser.add_argument('-g', '--gw', default='http://127.0.0.1:5000',
+    parser.add_argument('-g', '--gw', default='http://blockchain_server1:5000',
                         type=str, help='blockchain gateway')
     args = parser.parse_args()
     port = args.port

@@ -37,6 +37,11 @@ class BlockChain(object):
         self.mining_semaphore = threading.Semaphore(1)
         self.sync_neighbours_semaphore = threading.Semaphore(1)
 
+    def run(self):
+        self.sync_neighbours()
+        self.resolve_conflicts()
+        # self.start_mining()
+
     def set_neighbours(self):
         self.neighbours = utils.find_neighbours(
             utils.get_host(), self.port,
@@ -160,6 +165,10 @@ class BlockChain(object):
         previous_hash = self.hash(self.chain[-1])
         self.create_block(nonce, previous_hash)
         logger.info({'action': 'mining', 'status': 'success'})
+
+        for node in self.neighbours:
+            requests.put(f'http://{node}/consensus')
+
         return True
 
     def start_mining(self):
@@ -181,3 +190,43 @@ class BlockChain(object):
                 if blockchain_address == transaction['sender_blockchain_address']:
                     total_amount -= value
         return total_amount
+
+
+    def valid_chain(self, chain):
+        pre_block = chain[0]
+        current_index = 1
+        while current_index < len(chain):
+            block = chain[current_index]
+            if block['previous_hash'] != self.hash(pre_block):
+                return False
+
+            if not self.valid_proof(
+                    block['transactions'], block['previous_hash'],
+                    block['nonce'], MINING_DIFFICULTY):
+                return False
+
+            pre_block = block
+            current_index += 1
+        return True
+
+    def resolve_conflicts(self):
+        longest_chain = None
+        max_length = len(self.chain)
+        for node in self.neighbours:
+            response = requests.get(f'http://{node}/chain')
+            if response.status_code == 200:
+                response_json = response.json()
+                chain = response_json['chain']
+                chain_length = len(chain)
+                if chain_length > max_length and self.valid_chain(chain):
+                    max_length = chain_length
+                    longest_chain = chain
+
+        if longest_chain:
+            self.chain = longest_chain
+            logger.info({'action': 'resolve_conflicts', 'status': 'replaced'})
+            return True
+
+        logger.info({'action': 'resolve_conflicts', 'status': 'not_replaced'})
+        return False
+

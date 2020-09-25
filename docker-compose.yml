@@ -1,0 +1,46 @@
+version: "3"
+services:
+  blockchain_server1:
+    container_name: blockchain_server1
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/usr/src/app
+    command: "python blockchain_server.py -p 5000"
+
+  blockchain_server2:
+    container_name: blockchain_server2
+    build: .
+    ports:
+      - "5001:5001"
+    volumes:
+      - .:/usr/src/app
+    command: "python blockchain_server.py -p 5001"
+
+  blockchain_server3:
+    container_name: blockchain_server3
+    build: .
+    ports:
+      - "5002:5002"
+    volumes:
+      - .:/usr/src/app
+    command: "python blockchain_server.py -p 5002"
+
+  wallet_serverA:
+    container_name: wallet_serverA
+    build: .
+    ports:
+      - "8881:8881"
+    volumes:
+      - .:/usr/src/app
+    command: "python wallet_server.py -p 8881"
+
+  wallet_serverB:
+    container_name: wallet_serverB
+    build: .
+    ports:
+      - "8882:8882"
+    volumes:
+      - .:/usr/src/app
+    command: "python wallet_server.py -p 8882"

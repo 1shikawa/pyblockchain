@@ -107,4 +107,3 @@ if __name__ == '__main__':
 
     print('A', block_chain.calculate_total_amount(wallet_A.blockchain_address))
     print('B', block_chain.calculate_total_amount(wallet_B.blockchain_address))
-

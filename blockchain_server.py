@@ -9,8 +9,6 @@ app = Flask(__name__)
 
 
 cache = {}
-
-
 def get_blockchain():
     cached_blockchain = cache.get('blockchain')
     if not cached_blockchain:
@@ -34,7 +32,7 @@ def get_chain():
     return jsonify(response), 200
 
 
-@app.route('/transactions', methods=['GET', 'POST','PUT', 'DELETE'])
+@app.route('/transactions', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def transaction():
     block_chain = get_blockchain()
     if request.method == 'GET':
@@ -93,6 +91,7 @@ def transaction():
         block_chain.transaction_pool = []
         return jsonify({'message': 'success'}), 200
 
+
 @app.route('/mine', methods=['GET'])
 def mine():
     block_chain = get_blockchain()
@@ -108,6 +107,20 @@ def start_mine():
     return jsonify({'message': 'success'}), 200
 
 
+@app.route('/consensus', methods=['PUT'])
+def consensus():
+    block_chain = get_blockchain()
+    replaced = block_chain.resolve_conflicts()
+    return jsonify({'replaced': replaced}), 200
+
+
+@app.route('/amount', methods=['GET'])
+def get_total_amount():
+    blockchain_address= request.args['blockchain_address']
+    return jsonify({
+        'amount': get_blockchain().calculate_total_amount(blockchain_address)
+    }), 200
+
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
@@ -118,6 +131,6 @@ if __name__ == '__main__':
 
     app.config['port'] = port
 
-    get_blockchain().sync_neighbours()
+    get_blockchain().run()
 
     app.run(host='0.0.0.0', port=port, threaded=True, debug=True)
